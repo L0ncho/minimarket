@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Inventario.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">minimarket</a> &gt; <a href="index.source.html" class="el_package">com.minimarket.entity</a> &gt; <span class="el_source">Inventario.java</span></div><h1>Inventario.java</h1><pre class="source lang-java linenums">package com.minimarket.entity;
+
+import jakarta.persistence.*;
+import java.util.Date;
+
+@Entity
+<span class="fc" id="L7">public class Inventario {</span>
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = &quot;producto_id&quot;, nullable = false)
+    private Producto producto;
+
+    @Column(nullable = false)
+    private Integer cantidad;
+
+    @Column(nullable = false)
+    private String tipoMovimiento; // Ejemplo: &quot;Entrada&quot; o &quot;Salida&quot;
+
+    @Column(nullable = false)
+    private Date fechaMovimiento;
+
+    // Getters y Setters
+    public Long getId() {
+<span class="nc" id="L27">        return id;</span>
+    }
+
+    public void setId(Long id) {
+<span class="fc" id="L31">        this.id = id;</span>
+<span class="fc" id="L32">    }</span>
+
+    public Producto getProducto() {
+<span class="fc" id="L35">        return producto;</span>
+    }
+
+    public void setProducto(Producto producto) {
+<span class="fc" id="L39">        this.producto = producto;</span>
+<span class="fc" id="L40">    }</span>
+
+    public Integer getCantidad() {
+<span class="fc" id="L43">        return cantidad;</span>
+    }
+
+    public void setCantidad(Integer cantidad) {
+<span class="fc" id="L47">        this.cantidad = cantidad;</span>
+<span class="fc" id="L48">    }</span>
+
+    public String getTipoMovimiento() {
+<span class="fc" id="L51">        return tipoMovimiento;</span>
+    }
+
+    public void setTipoMovimiento(String tipoMovimiento) {
+<span class="fc" id="L55">        this.tipoMovimiento = tipoMovimiento;</span>
+<span class="fc" id="L56">    }</span>
+
+    public Date getFechaMovimiento() {
+<span class="nc" id="L59">        return fechaMovimiento;</span>
+    }
+
+    public void setFechaMovimiento(Date fechaMovimiento) {
+<span class="fc" id="L63">        this.fechaMovimiento = fechaMovimiento;</span>
+<span class="fc" id="L64">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

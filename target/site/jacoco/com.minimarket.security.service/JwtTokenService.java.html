@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtTokenService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">minimarket</a> &gt; <a href="index.source.html" class="el_package">com.minimarket.security.service</a> &gt; <span class="el_source">JwtTokenService.java</span></div><h1>JwtTokenService.java</h1><pre class="source lang-java linenums">package com.minimarket.security.service;
+
+import com.minimarket.security.exception.InvalidJwtException;
+import com.minimarket.security.exception.JwtFailureReason;
+import com.minimarket.security.model.JwtClaims;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+<span class="fc" id="L23">public class JwtTokenService {</span>
+
+    @Value(&quot;${jwt.secret}&quot;)
+    private String secret;
+
+    @Value(&quot;${jwt.expiration}&quot;)
+    private Long expiration;
+
+    public JwtClaims parseToken(String rawToken) {
+        try {
+<span class="fc" id="L33">            Claims claims = Jwts.parser()</span>
+<span class="fc" id="L34">                    .verifyWith(getSigningKey())</span>
+<span class="fc" id="L35">                    .build()</span>
+<span class="fc" id="L36">                    .parseSignedClaims(rawToken)</span>
+<span class="fc" id="L37">                    .getPayload();</span>
+<span class="fc" id="L38">            return new JwtClaims(claims);</span>
+<span class="fc" id="L39">        } catch (ExpiredJwtException expiredJwtException) {</span>
+<span class="fc" id="L40">            throw new InvalidJwtException(JwtFailureReason.EXPIRED);</span>
+<span class="fc" id="L41">        } catch (MalformedJwtException malformedJwtException) {</span>
+<span class="fc" id="L42">            throw new InvalidJwtException(JwtFailureReason.MALFORMED);</span>
+<span class="fc" id="L43">        } catch (io.jsonwebtoken.security.SecurityException securityException) {</span>
+<span class="fc" id="L44">            throw new InvalidJwtException(JwtFailureReason.INVALID_SIGNATURE);</span>
+<span class="nc" id="L45">        } catch (JwtException jwtException) {</span>
+<span class="nc" id="L46">            throw new InvalidJwtException(JwtFailureReason.UNSUPPORTED);</span>
+        }
+    }
+
+    public boolean isTokenValidForUser(JwtClaims jwtClaims, UserDetails userDetails) {
+<span class="pc bpc" id="L51" title="1 of 4 branches missed.">        return jwtClaims.getUsername().equals(userDetails.getUsername()) &amp;&amp; !jwtClaims.isExpired();</span>
+    }
+
+    public String generateToken(UserDetails userDetails) {
+<span class="fc" id="L55">        Map&lt;String, Object&gt; claims = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L56">        claims.put(&quot;roles&quot;, userDetails.getAuthorities().stream()</span>
+<span class="fc" id="L57">                .map(auth -&gt; auth.getAuthority())</span>
+<span class="fc" id="L58">                .collect(Collectors.toList()));</span>
+<span class="fc" id="L59">        return createToken(claims, userDetails.getUsername());</span>
+    }
+
+    private String createToken(Map&lt;String, Object&gt; claims, String subject) {
+<span class="fc" id="L63">        return Jwts.builder()</span>
+<span class="fc" id="L64">                .claims(claims)</span>
+<span class="fc" id="L65">                .subject(subject)</span>
+<span class="fc" id="L66">                .issuedAt(new Date(System.currentTimeMillis()))</span>
+<span class="fc" id="L67">                .expiration(new Date(System.currentTimeMillis() + expiration))</span>
+<span class="fc" id="L68">                .signWith(getSigningKey())</span>
+<span class="fc" id="L69">                .compact();</span>
+    }
+
+    private SecretKey getSigningKey() {
+<span class="fc" id="L73">        return Keys.hmacShaKeyFor(secret.getBytes());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

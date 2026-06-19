@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UsuarioServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">minimarket</a> &gt; <a href="index.source.html" class="el_package">com.minimarket.service.impl</a> &gt; <span class="el_source">UsuarioServiceImpl.java</span></div><h1>UsuarioServiceImpl.java</h1><pre class="source lang-java linenums">package com.minimarket.service.impl;
+
+import com.minimarket.dto.UsuarioRequestDto;
+import com.minimarket.dto.UsuarioResponseDto;
+import com.minimarket.entity.Rol;
+import com.minimarket.entity.Usuario;
+import com.minimarket.repository.RolRepository;
+import com.minimarket.repository.UsuarioRepository;
+import com.minimarket.service.UsuarioService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+<span class="fc" id="L21">public class UsuarioServiceImpl implements UsuarioService {</span>
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Override
+    public List&lt;UsuarioResponseDto&gt; findAll() {
+<span class="fc" id="L34">        return usuarioRepository.findAll().stream()</span>
+<span class="fc" id="L35">                .map(this::toResponseDto)</span>
+<span class="fc" id="L36">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public Optional&lt;UsuarioResponseDto&gt; findById(Long id) {
+<span class="nc" id="L41">        return usuarioRepository.findById(id).map(this::toResponseDto);</span>
+    }
+
+    @Override
+    public Optional&lt;Usuario&gt; findByUsername(String username) {
+<span class="nc" id="L46">        return usuarioRepository.findByUsername(username);</span>
+    }
+
+    @Override
+    public UsuarioResponseDto create(UsuarioRequestDto dto) {
+<span class="pc bpc" id="L51" title="1 of 4 branches missed.">        if (dto.getPassword() == null || dto.getPassword().isBlank()) {</span>
+<span class="fc" id="L52">            throw new IllegalArgumentException(&quot;La contraseña es obligatoria&quot;);</span>
+        }
+<span class="fc" id="L54">        Usuario usuario = new Usuario();</span>
+<span class="fc" id="L55">        usuario.setUsername(dto.getUsername());</span>
+<span class="fc" id="L56">        usuario.setPassword(encodePassword(dto.getPassword()));</span>
+<span class="fc" id="L57">        usuario.setRoles(resolveRoles(dto.getRoles()));</span>
+<span class="fc" id="L58">        return toResponseDto(usuarioRepository.save(usuario));</span>
+    }
+
+    @Override
+    public Optional&lt;UsuarioResponseDto&gt; update(Long id, UsuarioRequestDto dto) {
+<span class="nc" id="L63">        return usuarioRepository.findById(id).map(existing -&gt; {</span>
+<span class="nc" id="L64">            existing.setUsername(dto.getUsername());</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">            if (dto.getPassword() != null &amp;&amp; !dto.getPassword().isBlank()) {</span>
+<span class="nc" id="L66">                existing.setPassword(encodePassword(dto.getPassword()));</span>
+            }
+<span class="nc bnc" id="L68" title="All 4 branches missed.">            if (dto.getRoles() != null &amp;&amp; !dto.getRoles().isEmpty()) {</span>
+<span class="nc" id="L69">                existing.setRoles(resolveRoles(dto.getRoles()));</span>
+            }
+<span class="nc" id="L71">            return toResponseDto(usuarioRepository.save(existing));</span>
+        });
+    }
+
+    @Override
+    public Usuario save(Usuario usuario) {
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (usuario.getId() == null) {</span>
+            // ES UN USUARIO NUEVO
+<span class="fc" id="L79">            usuario.setPassword(encodePassword(usuario.getPassword()));</span>
+            
+            // 1. Asignamos rol CLIENTE por defecto si no trae roles
+<span class="pc bpc" id="L82" title="1 of 4 branches missed.">            if (usuario.getRoles() == null || usuario.getRoles().isEmpty()) {</span>
+<span class="fc" id="L83">                Rol rolCliente = rolRepository.findByNombre(&quot;CLIENTE&quot;)</span>
+<span class="pc" id="L84">                        .orElseThrow(() -&gt; new RuntimeException(&quot;Error: Rol CLIENTE no existe en la base de datos&quot;));</span>
+<span class="fc" id="L85">                Set&lt;Rol&gt; rolesPorDefecto = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L86">                rolesPorDefecto.add(rolCliente);</span>
+<span class="fc" id="L87">                usuario.setRoles(rolesPorDefecto);</span>
+<span class="fc" id="L88">            }</span>
+            
+        } else {
+           
+<span class="nc" id="L92">            usuarioRepository.findById(usuario.getId()).ifPresent(existing -&gt; {</span>
+<span class="nc bnc" id="L93" title="All 4 branches missed.">                if (usuario.getPassword() == null || usuario.getPassword().isBlank()) {</span>
+<span class="nc" id="L94">                    usuario.setPassword(existing.getPassword());</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                } else if (!isEncoded(usuario.getPassword())) {</span>
+<span class="nc" id="L96">                    usuario.setPassword(encodePassword(usuario.getPassword()));</span>
+                }
+<span class="nc" id="L98">            });</span>
+        }
+<span class="fc" id="L100">        return usuarioRepository.save(usuario);</span>
+    }
+
+    @Override
+    public void deleteById(Long id) {
+<span class="nc" id="L105">        usuarioRepository.deleteById(id);</span>
+<span class="nc" id="L106">    }</span>
+
+    private UsuarioResponseDto toResponseDto(Usuario usuario) {
+<span class="fc" id="L109">        Set&lt;String&gt; roleNames = usuario.getRoles().stream()</span>
+<span class="fc" id="L110">                .map(Rol::getNombre)</span>
+<span class="fc" id="L111">                .collect(Collectors.toSet());</span>
+<span class="fc" id="L112">        return new UsuarioResponseDto(usuario.getId(), usuario.getUsername(), roleNames);</span>
+    }
+
+    private Set&lt;Rol&gt; resolveRoles(Set&lt;String&gt; roleNames) {
+<span class="fc" id="L116">        Set&lt;Rol&gt; roles = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        for (String name : roleNames) {</span>
+<span class="fc" id="L118">            Rol rol = rolRepository.findByNombre(name)</span>
+<span class="fc" id="L119">                    .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Rol no encontrado: &quot; + name));</span>
+<span class="fc" id="L120">            roles.add(rol);</span>
+<span class="fc" id="L121">        }</span>
+<span class="fc" id="L122">        return roles;</span>
+    }
+
+    private String encodePassword(String rawPassword) {
+<span class="pc bpc" id="L126" title="2 of 4 branches missed.">        if (rawPassword == null || rawPassword.isBlank()) {</span>
+<span class="nc" id="L127">            throw new IllegalArgumentException(&quot;La contraseña es obligatoria&quot;);</span>
+        }
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (isEncoded(rawPassword)) {</span>
+<span class="nc" id="L130">            return rawPassword;</span>
+        }
+<span class="fc" id="L132">        return passwordEncoder.encode(rawPassword);</span>
+    }
+
+    private boolean isEncoded(String password) {
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">        return password.startsWith(&quot;$2a$&quot;) || password.startsWith(&quot;$2b$&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
