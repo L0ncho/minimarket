@@ -1,0 +1,31 @@
+# Maven build output
+target/
+**/target/
+
+# Maven wrapper temp/download artifacts
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE and OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment and secrets
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.jks
+secrets/
+
+# Spring config overrides that may contain secrets
+application-local.properties
+application-dev.properties
+application-prod.properties
