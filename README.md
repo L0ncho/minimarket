@@ -8,44 +8,68 @@ Backend REST para la gestión de un minimarket, desarrollado con Spring Boot 3 y
 
 ## Ejecución local
 ```bash
-cd minimarket
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 La aplicación queda disponible en http://localhost:8080.
 
+## Autenticación y pruebas (JWT)
 
-AUTENTICACION Y PRUEBAS (JWT)
-La API utiliza JSON WEB TOKENS (JWT). Para acceder a rutas protegidas, debes enviar el token en la cabcera HTTP.
+La API utiliza JSON Web Tokens (JWT). Para acceder a rutas protegidas, debes enviar el token en la cabecera HTTP `Authorization: Bearer <token>`.
 
--  Obtener Token (login):
-   
+**Obtener token (login):**
+
+```bash
 curl -X POST http://localhost:8080/api/auth/login \
--H "Content-Type: application/json" \
--d '{"username":"admin", "password":"admin123"}'
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin", "password":"Admin123!"}'
+```
 
--  Consumir endopoint protegido:
+**Registrar nuevo usuario:**
 
+```bash
+curl -X POST http://localhost:8080/api/auth/registro \
+  -H "Content-Type: application/json" \
+  -d '{"username":"nuevo", "password":"Password123!"}'
+```
+
+**Consumir endpoint protegido:**
+
+```bash
 curl -X GET http://localhost:8080/api/ventas \
--H "Authorization: Bearer <TU_TOKEN_AQUI>"
+  -H "Authorization: Bearer <TU_TOKEN_AQUI>"
+```
 
- 
- BASE DE DATOS (entorno local)
-   Consola H2: http://localhost:8080/h2-console
-   JDBC URL: jdbc:h2:mem:minimarketdb
-   Usuario: sa
-   contraseña: (vacia)
+### Política de contraseñas
 
+Las contraseñas en registro y alta de usuarios deben cumplir:
 
-##   USUARIOS DE PRUEBA:  
-| Usuario   | Contraseña    | Rol      |
-|-----------|---------------|----------|
-| admin     | admin123      | ADMIN    |
-| gerente   | gerente123    | GERENTE  |
-| empleado  | empleado123   | EMPLEADO |
-| cliente   | cliente123    | CLIENTE  |
+* Mínimo 8 caracteres
+* Al menos una mayúscula, una minúscula, un número y un carácter especial (`!@#$%^&*`, etc.)
 
+### Protección del login (entorno local)
 
-##ROLES Y PERMISOS:
+* Bloqueo temporal tras intentos fallidos (en memoria; se reinicia al reiniciar la aplicación)
+* Rate limiting por IP en `POST /api/auth/login`
+
+Propiedades configurables en `application.properties` bajo `security.login.*`.
+
+## Base de datos (entorno local)
+
+* Consola H2: http://localhost:8080/h2-console
+* JDBC URL: `jdbc:h2:mem:minimarketdb`
+* Usuario: `sa`
+* Contraseña: (vacía)
+
+## Usuarios de prueba
+
+| Usuario   | Contraseña     | Rol      |
+|-----------|----------------|----------|
+| admin     | Admin123!      | ADMIN    |
+| gerente   | Gerente123!    | GERENTE  |
+| empleado  | Empleado123!   | EMPLEADO |
+| cliente   | Cliente123!    | CLIENTE  |
+
+## Roles y permisos
 
 | Recurso | Público | CLIENTE | EMPLEADO | GERENTE | ADMIN |
 |---------|---------|---------|----------|---------|-------|
@@ -59,26 +83,13 @@ curl -X GET http://localhost:8080/api/ventas \
 | Usuarios | — | — | — | — | Si |
 | /public/** | Si | Si | Si | Si | Si |
 
-TESTING Y COBERTURA DE CÓDIGO
+## Tests
 
-El proyecto cuenta con una suite de pruebas unitarias y de integración orientada al comportamiento guiado por pruebas (TDD). Valida flujos de seguridad (RBAC) y reglas de negocio críticas, como disponibilidad de stock en el carrito y la consistencia de metadatos en el inventario.
-
-
-Ejecutar pruebas unitarias
-Para correr la suite de pruebas automatizadas aisladas con JUnit 5 y Mockito:
-
-``` bash
+```bash
 cd minimarket
-./mvnw clean test
+mvn clean test
 ```
 
-Reporte de Cobertura (JaCoCo)
+## Reporte de Cobertura (JaCoCo)
 
-El proyecto está configurado con JaCoCo y cumple con una métrica de cobertura de código exigida superior al 80% en la capa de servicios transaccionales. Para instrumentar el código y generar el reporte HTML, ejecuta:
- 
-``` bash
-cd minimarket
-./mvnw clean verify
-```
-Una vez que el proceso de "build" finalice, puedes abrir el reporte de auditoría en tu navegador navegando a la siguiente ruta dentro del proyecto:
-* Ruta del reporte: target/site/jacoco/index.html
+Visita [docs/coverage.md](docs/coverage.md) para ver más detalle.
