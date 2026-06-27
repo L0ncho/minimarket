@@ -22,16 +22,23 @@ class CarritoSerializationTest {
         rol.setUsuarios(Set.of(usuario));
         usuario.setRoles(Set.of(rol));
 
-        Carrito carrito = new Carrito();
+        Producto producto = new Producto();
+        producto.setId(1L);
+        producto.setNombre("Leche entera 1L");
+        producto.setStock(50);
+
+        Carrito carrito = new Carrito(usuario);
         carrito.setId(1L);
-        carrito.setCantidad(2);
-        carrito.setUsuario(usuario);
+        carrito.agregarProducto(producto, 2);
 
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(carrito);
 
         assertTrue(json.contains("\"username\":\"cliente\""));
         assertTrue(json.contains("\"nombre\":\"CLIENTE\""));
+        assertTrue(json.contains("\"items\":["));
+        assertTrue(json.contains("\"cantidad\":2"));
         assertFalse(json.contains("\"usuarios\":["), "JSON must not include Rol.usuarios back-reference");
+        assertFalse(json.contains("\"carrito\":{"), "ItemCarrito must not serialize carrito back-reference");
     }
 }

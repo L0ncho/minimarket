@@ -1,6 +1,7 @@
 package com.minimarket.service.impl;
 
 import com.minimarket.entity.DetalleVenta;
+import com.minimarket.entity.EstadoPago;
 import com.minimarket.entity.Producto;
 import com.minimarket.entity.Venta;
 import com.minimarket.exception.InsufficientStockException;
@@ -46,6 +47,24 @@ public class VentaServiceImpl implements VentaService {
     @Override
     public List<Venta> findByUsuarioId(Long usuarioId) {
         return ventaRepository.findByUsuarioId(usuarioId);
+    }
+
+    @Override
+    public List<Venta> findPendientesDePago() {
+        return ventaRepository.findByEstadoPago(EstadoPago.PENDIENTE_PAGO);
+    }
+
+    @Override
+    public Venta confirmarPago(Long ventaId) {
+        Venta venta = findById(ventaId);
+        if (venta == null) {
+            throw new IllegalArgumentException("Venta con id " + ventaId + " not found");
+        }
+        if (venta.getEstadoPago() == EstadoPago.PAGADO) {
+            throw new IllegalStateException("La venta ya fue pagada");
+        }
+        venta.setEstadoPago(EstadoPago.PAGADO);
+        return ventaRepository.save(venta);
     }
 
     private void validateAndDeductStock(Venta venta) {
