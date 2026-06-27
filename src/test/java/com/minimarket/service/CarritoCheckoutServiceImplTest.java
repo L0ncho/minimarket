@@ -42,6 +42,9 @@ class CarritoCheckoutServiceImplTest {
     @Mock
     private PaymentProcessor paymentProcessor;
 
+    @Mock
+    private NotificacionService notificacionService;
+
     @InjectMocks
     private CarritoCheckoutServiceImpl carritoCheckoutService;
 
@@ -179,5 +182,24 @@ class CarritoCheckoutServiceImplTest {
         carritoCheckoutService.checkout("cliente", MetodoPago.EFECTIVO);
 
         verify(paymentProcessor).initiatePayment(ventaGuardada);
+    }
+
+    @Test
+    void checkout_exitoso_notificaCambioDePedidoAlCliente() {
+        Venta ventaGuardada = new Venta();
+        ventaGuardada.setId(42L);
+        ventaGuardada.setUsuario(usuario);
+        ventaGuardada.setEstadoPago(EstadoPago.PENDIENTE_PAGO);
+
+        when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(usuario));
+        when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carrito));
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(ventaService.save(any(Venta.class))).thenReturn(ventaGuardada);
+
+        carritoCheckoutService.checkout("cliente", MetodoPago.EFECTIVO);
+
+        verify(notificacionService).notificarCambioPedido(
+                ventaGuardada,
+                "Pedido #42 creado, pendiente de pago");
     }
 }

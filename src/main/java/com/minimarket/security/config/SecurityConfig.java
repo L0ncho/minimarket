@@ -77,6 +77,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/productos/**", "/api/categorias/**").hasAnyRole("GERENTE", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/productos/**", "/api/categorias/**").hasAnyRole("GERENTE", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**", "/api/categorias/**").hasAnyRole("GERENTE", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/notificaciones/promociones").hasAnyRole("GERENTE", "ADMIN")
+                .requestMatchers("/api/notificaciones/**").authenticated()
                 .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             );

@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -22,10 +23,12 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
         Map<String, Object> body = response.getBody();
         assertNotNull(body);
-        assertEquals("Stock insuficiente para 'Café'. Solo quedan 3 unidades.", body.get("error"));
-        assertEquals("Café", body.get("producto"));
-        assertEquals(3, body.get("disponible"));
-        assertEquals(5, body.get("solicitado"));
+        assertAll(
+                () -> assertEquals("Stock insuficiente para 'Café'. Solo quedan 3 unidades.", body.get("error")),
+                () -> assertEquals("Café", body.get("producto")),
+                () -> assertEquals(3, body.get("disponible")),
+                () -> assertEquals(5, body.get("solicitado"))
+        );
     }
 
     @Test

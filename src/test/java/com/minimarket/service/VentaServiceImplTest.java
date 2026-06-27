@@ -3,6 +3,7 @@ package com.minimarket.service;
 import com.minimarket.entity.DetalleVenta;
 import com.minimarket.entity.EstadoPago;
 import com.minimarket.entity.Producto;
+import com.minimarket.entity.Usuario;
 import com.minimarket.entity.Venta;
 import com.minimarket.exception.InsufficientStockException;
 import com.minimarket.repository.ProductoRepository;
@@ -22,6 +23,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +37,9 @@ class VentaServiceImplTest {
 
     @Mock
     private InventarioService inventarioService;
+
+    @Mock
+    private NotificacionService notificacionService;
 
     @InjectMocks
     private VentaServiceImpl ventaService;
@@ -127,7 +132,7 @@ class VentaServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             ventaService.save(venta);
         });
-        assertTrue(exception.getMessage().contains("not found"));
+        assertEquals("Producto con id 1 no encontrado", exception.getMessage());
     }
 
     @Test
@@ -139,10 +144,12 @@ class VentaServiceImplTest {
         InsufficientStockException exception = assertThrows(InsufficientStockException.class, () -> {
             ventaService.save(venta);
         });
-        assertEquals("Café", exception.getProducto());
-        assertEquals(20, exception.getDisponible());
-        assertEquals(50, exception.getSolicitado());
-        assertTrue(exception.getClientMessage().contains("Solo quedan 20 unidades"));
+        assertAll(
+                () -> assertEquals("Café", exception.getProducto()),
+                () -> assertEquals(20, exception.getDisponible()),
+                () -> assertEquals(50, exception.getSolicitado()),
+                () -> assertTrue(exception.getClientMessage().contains("Solo quedan 20 unidades"))
+        );
 
         verify(inventarioService, never()).registrarSalida(anyLong(), anyInt());
         verifyNoInteractions(ventaRepository);
@@ -191,13 +198,16 @@ class VentaServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 ventaService.confirmarPago(99L));
 
-        assertTrue(exception.getMessage().contains("not found"));
+        assertEquals("Venta con id 99 no encontrado", exception.getMessage());
         verify(ventaRepository).findById(99L);
         verifyNoMoreInteractions(ventaRepository);
     }
 
     @Test
     void confirmarPago_ventaPendiente_marcaPagado() {
+        Usuario cliente = new Usuario();
+        cliente.setId(10L);
+        venta.setUsuario(cliente);
         venta.setEstadoPago(EstadoPago.PENDIENTE_PAGO);
         when(ventaRepository.findById(1L)).thenReturn(Optional.of(venta));
         when(ventaRepository.save(Objects.requireNonNull(venta))).thenReturn(venta);
@@ -206,6 +216,9 @@ class VentaServiceImplTest {
 
         assertEquals(EstadoPago.PAGADO, resultado.getEstadoPago());
         verify(ventaRepository).save(Objects.requireNonNull(venta));
+        verify(notificacionService).notificarCambioPedido(
+                eq(resultado),
+                eq("Pedido #1 pagado"));
     }
 
     @Test

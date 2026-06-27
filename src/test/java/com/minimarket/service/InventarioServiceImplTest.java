@@ -8,6 +8,9 @@ import com.minimarket.service.impl.InventarioServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -17,6 +20,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -100,34 +105,33 @@ class InventarioServiceImplTest {
         verify(inventarioRepository, times(1)).save(inventario);
     }
 
-    @Test
-    void testSave_TipoMovimientoNulo_LanzaExcepcion() {
-        inventario.setTipoMovimiento(null);
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            inventarioService.save(inventario);
-        });
-        assertEquals("El tipo de movimiento no puede ser nulo o vacío", exception.getMessage());
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("validacionesInvalidasDeSave")
+    void save_datosInvalidos_lanzaIllegalArgument(Consumer<Inventario> mutador, String mensajeEsperado) {
+        mutador.accept(inventario);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                inventarioService.save(inventario));
+
+        assertEquals(mensajeEsperado, exception.getMessage());
         verify(inventarioRepository, never()).save(any());
     }
 
-    @Test
-    void testSave_CantidadNula_LanzaExcepcion() {
-        inventario.setCantidad(null);
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            inventarioService.save(inventario);
-        });
-        assertEquals("La cantidad no puede ser nula o menor/igual a cero", exception.getMessage());
-        verify(inventarioRepository, never()).save(any());
-    }
-
-    @Test
-    void testSave_ProductoAsociadoInvalido_LanzaExcepcion() {
-        inventario.setProducto(null);
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            inventarioService.save(inventario);
-        });
-        assertEquals("El producto asociado es nulo o inválido", exception.getMessage());
-        verify(inventarioRepository, never()).save(any());
+    private static Stream<Arguments> validacionesInvalidasDeSave() {
+        return Stream.of(
+                Arguments.of(
+                        (Consumer<Inventario>) movimiento -> movimiento.setTipoMovimiento(null),
+                        "El tipo de movimiento no puede ser nulo o vacío"),
+                Arguments.of(
+                        (Consumer<Inventario>) movimiento -> movimiento.setCantidad(null),
+                        "La cantidad no puede ser nula o menor/igual a cero"),
+                Arguments.of(
+                        (Consumer<Inventario>) movimiento -> movimiento.setCantidad(0),
+                        "La cantidad no puede ser nula o menor/igual a cero"),
+                Arguments.of(
+                        (Consumer<Inventario>) movimiento -> movimiento.setProducto(null),
+                        "El producto asociado es nulo o inválido")
+        );
     }
 
     @Test
@@ -200,7 +204,7 @@ class InventarioServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 inventarioService.registrarEntrada(99L, 5));
 
-        assertEquals("Producto no encontrado", exception.getMessage());
+        assertEquals("Producto con id 99 no encontrado", exception.getMessage());
         verify(inventarioRepository, never()).save(any());
     }
 

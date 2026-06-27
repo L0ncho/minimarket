@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
@@ -120,11 +121,13 @@ class AnalisisVentasServiceImplTest {
 
         List<ProductoMasVendidoResponse> ranking = analisisVentasService.productosMasVendidos();
 
-        assertEquals(2, ranking.size());
-        assertEquals(2L, ranking.get(0).getProductoId());
-        assertEquals(10, ranking.get(0).getCantidadVendida());
-        assertEquals(1L, ranking.get(1).getProductoId());
-        assertEquals(5, ranking.get(1).getCantidadVendida());
+        assertAll(
+                () -> assertEquals(2, ranking.size()),
+                () -> assertEquals(2L, ranking.get(0).getProductoId()),
+                () -> assertEquals(10, ranking.get(0).getCantidadVendida()),
+                () -> assertEquals(1L, ranking.get(1).getProductoId()),
+                () -> assertEquals(5, ranking.get(1).getCantidadVendida())
+        );
     }
 
     @Test

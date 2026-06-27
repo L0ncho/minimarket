@@ -8,6 +8,7 @@ import com.minimarket.exception.InsufficientStockException;
 import com.minimarket.repository.ProductoRepository;
 import com.minimarket.repository.VentaRepository;
 import com.minimarket.service.InventarioService;
+import com.minimarket.service.NotificacionService;
 import com.minimarket.service.VentaService;
 import org.springframework.stereotype.Service;
 
@@ -20,14 +21,17 @@ public class VentaServiceImpl implements VentaService {
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
     private final InventarioService inventarioService;
+    private final NotificacionService notificacionService;
 
     public VentaServiceImpl(
             VentaRepository ventaRepository,
             ProductoRepository productoRepository,
-            InventarioService inventarioService) {
+            InventarioService inventarioService,
+            NotificacionService notificacionService) {
         this.ventaRepository = ventaRepository;
         this.productoRepository = productoRepository;
         this.inventarioService = inventarioService;
+        this.notificacionService = notificacionService;
     }
 
     @Override
@@ -64,13 +68,17 @@ public class VentaServiceImpl implements VentaService {
     public Venta confirmarPago(Long ventaId) {
         Venta venta = findById(ventaId);
         if (venta == null) {
-            throw new IllegalArgumentException("Venta con id " + ventaId + " not found");
+            throw new IllegalArgumentException("Venta con id " + ventaId + " no encontrado");
         }
         if (venta.getEstadoPago() == EstadoPago.PAGADO) {
             throw new IllegalStateException("La venta ya fue pagada");
         }
         venta.setEstadoPago(EstadoPago.PAGADO);
-        return ventaRepository.save(venta);
+        Venta ventaPagada = ventaRepository.save(venta);
+        notificacionService.notificarCambioPedido(
+                ventaPagada,
+                "Pedido #" + ventaPagada.getId() + " pagado");
+        return ventaPagada;
     }
 
     private void validateAndDeductStock(Venta venta) {
@@ -105,6 +113,6 @@ public class VentaServiceImpl implements VentaService {
         }
         return productoRepository.findById(productoId)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Producto con id " + productoId + " not found"));
+                        "Producto con id " + productoId + " no encontrado"));
     }
 }

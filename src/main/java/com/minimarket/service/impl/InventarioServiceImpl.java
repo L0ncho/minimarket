@@ -115,7 +115,7 @@ public class InventarioServiceImpl implements InventarioService {
 
     private Producto buscarProducto(Long productoId) {
         return productoRepository.findById(requireNonNull(productoId, "Producto inválido"))
-                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Producto con id " + productoId + " no encontrado"));
     }
 
     private void guardarMovimiento(Producto producto, int cantidad, String tipoMovimiento) {
