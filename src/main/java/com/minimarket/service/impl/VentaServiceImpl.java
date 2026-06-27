@@ -7,6 +7,7 @@ import com.minimarket.entity.Venta;
 import com.minimarket.exception.InsufficientStockException;
 import com.minimarket.repository.ProductoRepository;
 import com.minimarket.repository.VentaRepository;
+import com.minimarket.service.InventarioService;
 import com.minimarket.service.VentaService;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +19,15 @@ public class VentaServiceImpl implements VentaService {
 
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
+    private final InventarioService inventarioService;
 
-    public VentaServiceImpl(VentaRepository ventaRepository, ProductoRepository productoRepository) {
+    public VentaServiceImpl(
+            VentaRepository ventaRepository,
+            ProductoRepository productoRepository,
+            InventarioService inventarioService) {
         this.ventaRepository = ventaRepository;
         this.productoRepository = productoRepository;
+        this.inventarioService = inventarioService;
     }
 
     @Override
@@ -73,17 +79,17 @@ public class VentaServiceImpl implements VentaService {
         }
         for (DetalleVenta detalle : venta.getDetalles()) {
             Producto producto = findProductoForDetalle(detalle);
-            if (producto.getStock() < detalle.getCantidad()) {
+            int stockDisponible = inventarioService.consultarStockDisponible(producto.getId());
+            if (stockDisponible < detalle.getCantidad()) {
                 throw new InsufficientStockException(
                         producto.getNombre(),
-                        producto.getStock(),
+                        stockDisponible,
                         detalle.getCantidad());
             }
         }
         for (DetalleVenta detalle : venta.getDetalles()) {
             Producto producto = findProductoForDetalle(detalle);
-            producto.setStock(producto.getStock() - detalle.getCantidad());
-            productoRepository.save(producto);
+            inventarioService.registrarSalida(producto.getId(), detalle.getCantidad());
             detalle.setProducto(producto);
         }
     }

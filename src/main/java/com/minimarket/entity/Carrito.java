@@ -48,14 +48,14 @@ public class Carrito {
         return items;
     }
 
-    public void agregarProducto(Producto producto, int cantidad) {
+    public void agregarProducto(Producto producto, int cantidad, int stockDisponible) {
         Optional<ItemCarrito> itemExistente = buscarItemPorProducto(producto.getId());
         if (itemExistente.isPresent()) {
-            validarStockDisponible(producto, itemExistente.get().getCantidad(), cantidad);
+            validarStockDisponible(producto, stockDisponible, itemExistente.get().getCantidad(), cantidad);
             itemExistente.get().incrementarCantidad(cantidad);
             return;
         }
-        validarStockDisponible(producto, 0, cantidad);
+        validarStockDisponible(producto, stockDisponible, 0, cantidad);
         items.add(new ItemCarrito(this, producto, cantidad));
     }
 
@@ -73,8 +73,8 @@ public class Carrito {
                 .findFirst();
     }
 
-    private void validarStockDisponible(Producto producto, int cantidadActual, int cantidadSolicitada) {
-        int restante = producto.getStock() - cantidadActual;
+    private void validarStockDisponible(Producto producto, int stockDisponible, int cantidadActual, int cantidadSolicitada) {
+        int restante = stockDisponible - cantidadActual;
         if (cantidadSolicitada > restante) {
             throw new InsufficientStockException(producto.getNombre(), restante, cantidadSolicitada);
         }

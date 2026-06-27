@@ -33,6 +33,9 @@ class VentaServiceImplTest {
     @Mock
     private ProductoRepository productoRepository;
 
+    @Mock
+    private InventarioService inventarioService;
+
     @InjectMocks
     private VentaServiceImpl ventaService;
 
@@ -45,7 +48,6 @@ class VentaServiceImplTest {
         producto = new Producto();
         producto.setId(1L);
         producto.setNombre("Café");
-        producto.setStock(20);
 
         detalle = new DetalleVenta();
         detalle.setProducto(producto);
@@ -90,9 +92,9 @@ class VentaServiceImplTest {
     void testSave_VentaSinDetalles_GuardaDirecto() {
         venta.setDetalles(null);
         when(ventaRepository.save(Objects.requireNonNull(venta))).thenReturn(venta);
-        
+
         Venta resultado = ventaService.save(venta);
-        
+
         assertNotNull(resultado);
         verify(productoRepository, never()).findById(anyLong());
         verify(ventaRepository, times(1)).save(Objects.requireNonNull(venta));
@@ -101,7 +103,7 @@ class VentaServiceImplTest {
     @Test
     void testSave_ProductoNuloEnDetalle_LanzaExcepcion() {
         detalle.setProducto(null);
-        
+
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             ventaService.save(venta);
         });
@@ -111,7 +113,7 @@ class VentaServiceImplTest {
     @Test
     void testSave_ProductoIdNuloEnDetalle_LanzaExcepcion() {
         producto.setId(null);
-        
+
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             ventaService.save(venta);
         });
@@ -121,7 +123,7 @@ class VentaServiceImplTest {
     @Test
     void testSave_ProductoNoEncontradoEnBD_LanzaExcepcion() {
         when(productoRepository.findById(1L)).thenReturn(Optional.empty());
-        
+
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             ventaService.save(venta);
         });
@@ -132,6 +134,7 @@ class VentaServiceImplTest {
     void testSave_StockInsuficiente_LanzaExcepcion() {
         detalle.setCantidad(50);
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(20);
 
         InsufficientStockException exception = assertThrows(InsufficientStockException.class, () -> {
             ventaService.save(venta);
@@ -141,22 +144,20 @@ class VentaServiceImplTest {
         assertEquals(50, exception.getSolicitado());
         assertTrue(exception.getClientMessage().contains("Solo quedan 20 unidades"));
 
-        verify(productoRepository).findById(1L);
-        verifyNoMoreInteractions(productoRepository);
+        verify(inventarioService, never()).registrarSalida(anyLong(), anyInt());
         verifyNoInteractions(ventaRepository);
     }
 
     @Test
-    void testSave_Exito_DescuentaStockYGuardaVenta() {
+    void testSave_Exito_RegistraSalidaYGuardaVenta() {
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(20);
         when(ventaRepository.save(Objects.requireNonNull(venta))).thenReturn(venta);
-        
+
         Venta resultado = ventaService.save(venta);
-        
+
         assertNotNull(resultado);
-        assertEquals(15, producto.getStock()); 
-        
-        verify(productoRepository, times(1)).save(Objects.requireNonNull(producto));
+        verify(inventarioService).registrarSalida(1L, 5);
         verify(ventaRepository, times(1)).save(Objects.requireNonNull(venta));
     }
 

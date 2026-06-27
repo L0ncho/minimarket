@@ -39,6 +39,9 @@ class CarritoServiceImplTest {
     @Mock
     private UsuarioRepository usuarioRepository;
 
+    @Mock
+    private InventarioService inventarioService;
+
     @InjectMocks
     private CarritoServiceImpl carritoService;
 
@@ -73,7 +76,6 @@ class CarritoServiceImplTest {
         producto = new Producto();
         producto.setId(1L);
         producto.setNombre("Leche entera 1L");
-        producto.setStock(10);
     }
 
     @Test
@@ -81,6 +83,7 @@ class CarritoServiceImplTest {
         Carrito carritoVacio = new Carrito(cliente);
         when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(cliente));
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(10);
         when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carritoVacio));
         when(carritoRepository.save(carritoVacio)).thenReturn(carritoVacio);
 
@@ -107,6 +110,7 @@ class CarritoServiceImplTest {
         when(usuarioService.findByUsername("empleado")).thenReturn(Optional.of(empleado));
         when(usuarioRepository.findById(5L)).thenReturn(Optional.of(otroCliente));
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(10);
         when(carritoRepository.findByUsuarioId(5L)).thenReturn(Optional.of(carritoOtro));
         when(carritoRepository.save(carritoOtro)).thenReturn(carritoOtro);
 
@@ -121,6 +125,7 @@ class CarritoServiceImplTest {
         Carrito carritoVacio = new Carrito(cliente);
         when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(cliente));
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(10);
         when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carritoVacio));
         when(carritoRepository.save(carritoVacio)).thenReturn(carritoVacio);
 
@@ -132,10 +137,11 @@ class CarritoServiceImplTest {
     @Test
     void agregarProducto_conCarritoExistente_sumaCantidad() {
         Carrito carritoExistente = new Carrito(cliente);
-        carritoExistente.agregarProducto(producto, 2);
+        carritoExistente.agregarProducto(producto, 2, 10);
 
         when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(cliente));
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(10);
         when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carritoExistente));
         when(carritoRepository.save(carritoExistente)).thenReturn(carritoExistente);
 
@@ -146,12 +152,12 @@ class CarritoServiceImplTest {
 
     @Test
     void agregarProducto_stockInsuficienteAcumulado_propagaInsufficientStockException() {
-        producto.setStock(3);
         Carrito carritoExistente = new Carrito(cliente);
-        carritoExistente.agregarProducto(producto, 2);
+        carritoExistente.agregarProducto(producto, 2, 3);
 
         when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(cliente));
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(3);
         when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carritoExistente));
 
         assertThrows(InsufficientStockException.class, () ->
@@ -192,7 +198,7 @@ class CarritoServiceImplTest {
     @Test
     void quitarProducto_eliminaItemDelCarrito() {
         Carrito carrito = new Carrito(cliente);
-        carrito.agregarProducto(producto, 2);
+        carrito.agregarProducto(producto, 2, 10);
 
         when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(cliente));
         when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carrito));
@@ -206,7 +212,7 @@ class CarritoServiceImplTest {
     @Test
     void vaciarCarrito_eliminaTodosLosItems() {
         Carrito carrito = new Carrito(cliente);
-        carrito.agregarProducto(producto, 2);
+        carrito.agregarProducto(producto, 2, 10);
 
         when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(cliente));
         when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carrito));

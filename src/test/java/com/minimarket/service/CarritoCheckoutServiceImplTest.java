@@ -59,11 +59,10 @@ class CarritoCheckoutServiceImplTest {
         producto.setId(1L);
         producto.setNombre("Cafe");
         producto.setPrecio(1000.0);
-        producto.setStock(10);
 
         carrito = new Carrito(usuario);
         carrito.setId(1L);
-        carrito.agregarProducto(producto, 2);
+        carrito.agregarProducto(producto, 2, 10);
     }
 
     @Test
@@ -109,8 +108,7 @@ class CarritoCheckoutServiceImplTest {
         pan.setId(2L);
         pan.setNombre("Pan");
         pan.setPrecio(500.0);
-        pan.setStock(10);
-        carrito.agregarProducto(pan, 3);
+        carrito.agregarProducto(pan, 3, 10);
 
         when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(usuario));
         when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carrito));

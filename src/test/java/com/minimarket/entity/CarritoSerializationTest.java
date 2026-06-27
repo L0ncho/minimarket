@@ -25,11 +25,10 @@ class CarritoSerializationTest {
         Producto producto = new Producto();
         producto.setId(1L);
         producto.setNombre("Leche entera 1L");
-        producto.setStock(50);
 
         Carrito carrito = new Carrito(usuario);
         carrito.setId(1L);
-        carrito.agregarProducto(producto, 2);
+        carrito.agregarProducto(producto, 2, 50);
 
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(carrito);

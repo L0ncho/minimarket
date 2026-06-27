@@ -17,15 +17,14 @@ public class Producto {
     @Column(nullable = false)
     private Double precio;
 
-    @Schema(description = "Stock disponible", example = "50")
-    @Column(nullable = false)
-    private Integer stock;
+    @Schema(description = "Stock disponible calculado desde inventario", example = "50", accessMode = Schema.AccessMode.READ_ONLY)
+    @Transient
+    private Integer stockDisponible;
 
     @ManyToOne
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -50,12 +49,12 @@ public class Producto {
         this.precio = precio;
     }
 
-    public Integer getStock() {
-        return stock;
+    public Integer getStockDisponible() {
+        return stockDisponible;
     }
 
-    public void setStock(Integer stock) {
-        this.stock = stock;
+    public void setStockDisponible(Integer stockDisponible) {
+        this.stockDisponible = stockDisponible;
     }
 
     public Categoria getCategoria() {

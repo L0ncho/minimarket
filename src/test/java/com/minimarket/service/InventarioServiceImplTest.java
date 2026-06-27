@@ -8,6 +8,7 @@ import com.minimarket.service.impl.InventarioServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -40,6 +41,7 @@ class InventarioServiceImplTest {
     void setUp() {
         producto = new Producto();
         producto.setId(1L);
+        producto.setNombre("Leche entera 1L");
 
         inventario = new Inventario();
         inventario.setId(1L);
@@ -48,8 +50,6 @@ class InventarioServiceImplTest {
         inventario.setFechaMovimiento(new Date());
         inventario.setProducto(producto);
     }
-
-    // --- PRUEBAS CRUD BÁSICAS (Para mantener Cobertura) ---
 
     @Test
     void testFindAll() {
@@ -89,15 +89,13 @@ class InventarioServiceImplTest {
         verify(inventarioRepository, times(1)).findByProductoId(1L);
     }
 
-    // --- PRUEBAS ESPECÍFICAS (Validaciones) ---
-
     @Test
     void testSave_Exito() {
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
         when(inventarioRepository.save(any(Inventario.class))).thenReturn(inventario);
-        
+
         Inventario resultado = inventarioService.save(inventario);
-        
+
         assertNotNull(resultado);
         verify(inventarioRepository, times(1)).save(inventario);
     }
@@ -140,5 +138,104 @@ class InventarioServiceImplTest {
         });
         assertEquals("El producto asociado no existe en la base de datos", exception.getMessage());
         verify(inventarioRepository, never()).save(any());
+    }
+
+    @Test
+    void consultarStockDisponible_sinMovimientos_retornaCero() {
+        when(inventarioRepository.findByProductoId(1L)).thenReturn(List.of());
+
+        int stockDisponible = inventarioService.consultarStockDisponible(1L);
+
+        assertEquals(0, stockDisponible);
+    }
+
+    @Test
+    void consultarStockDisponible_soloEntradas_sumaCantidades() {
+        when(inventarioRepository.findByProductoId(1L)).thenReturn(List.of(movimiento("Entrada", 50)));
+
+        int stockDisponible = inventarioService.consultarStockDisponible(1L);
+
+        assertEquals(50, stockDisponible);
+    }
+
+    @Test
+    void consultarStockDisponible_entradasYSalidas_calculaBalance() {
+        when(inventarioRepository.findByProductoId(1L))
+                .thenReturn(List.of(movimiento("Entrada", 50), movimiento("Salida", 12)));
+
+        int stockDisponible = inventarioService.consultarStockDisponible(1L);
+
+        assertEquals(38, stockDisponible);
+    }
+
+    @Test
+    void registrarEntrada_productoExistente_creaMovimientoEntrada() {
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioRepository.save(any(Inventario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        inventarioService.registrarEntrada(1L, 30);
+
+        ArgumentCaptor<Inventario> captor = ArgumentCaptor.forClass(Inventario.class);
+        verify(inventarioRepository).save(captor.capture());
+        Inventario movimiento = captor.getValue();
+        assertEquals("Entrada", movimiento.getTipoMovimiento());
+        assertEquals(30, movimiento.getCantidad());
+        assertEquals(producto, movimiento.getProducto());
+        assertNotNull(movimiento.getFechaMovimiento());
+    }
+
+    @Test
+    void registrarEntrada_cantidadInvalida_lanzaIllegalArgumentException() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                inventarioService.registrarEntrada(1L, 0));
+
+        assertEquals("La cantidad debe ser mayor a cero", exception.getMessage());
+        verify(inventarioRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarEntrada_productoInexistente_lanzaIllegalArgumentException() {
+        when(productoRepository.findById(99L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                inventarioService.registrarEntrada(99L, 5));
+
+        assertEquals("Producto no encontrado", exception.getMessage());
+        verify(inventarioRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarSalida_stockSuficiente_creaMovimientoSalida() {
+        when(inventarioRepository.findByProductoId(1L)).thenReturn(List.of(movimiento("Entrada", 50)));
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioRepository.save(any(Inventario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        inventarioService.registrarSalida(1L, 5);
+
+        ArgumentCaptor<Inventario> captor = ArgumentCaptor.forClass(Inventario.class);
+        verify(inventarioRepository).save(captor.capture());
+        assertEquals("Salida", captor.getValue().getTipoMovimiento());
+        assertEquals(5, captor.getValue().getCantidad());
+    }
+
+    @Test
+    void registrarSalida_stockInsuficiente_lanzaIllegalStateException() {
+        when(inventarioRepository.findByProductoId(1L)).thenReturn(List.of());
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                inventarioService.registrarSalida(1L, 5));
+
+        assertEquals("Stock insuficiente para el producto", exception.getMessage());
+        verify(inventarioRepository, never()).save(any());
+    }
+
+    private Inventario movimiento(String tipo, int cantidad) {
+        Inventario movimiento = new Inventario();
+        movimiento.setProducto(producto);
+        movimiento.setTipoMovimiento(tipo);
+        movimiento.setCantidad(cantidad);
+        movimiento.setFechaMovimiento(new Date());
+        return movimiento;
     }
 }

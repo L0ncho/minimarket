@@ -17,8 +17,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +29,9 @@ class ProductoServiceImplTest {
 
     @Mock
     private CategoriaRepository categoriaRepository;
+
+    @Mock
+    private InventarioService inventarioService;
 
     @InjectMocks
     private ProductoServiceImpl productoService;
@@ -45,25 +48,32 @@ class ProductoServiceImplTest {
         producto.setId(1L);
         producto.setNombre("Arroz");
         producto.setPrecio(1500.0);
-        producto.setStock(100);
         producto.setCategoria(categoria);
     }
 
     @Test
     void testFindAll() {
         when(productoRepository.findAll()).thenReturn(Arrays.asList(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(100);
+
         List<Producto> productos = productoService.findAll();
+
         assertFalse(productos.isEmpty());
         assertEquals(1, productos.size());
+        assertEquals(100, productos.get(0).getStockDisponible());
         verify(productoRepository, times(1)).findAll();
     }
 
     @Test
     void testFindById_Encontrado() {
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(100);
+
         Producto resultado = productoService.findById(1L);
+
         assertNotNull(resultado);
         assertEquals("Arroz", resultado.getNombre());
+        assertEquals(100, resultado.getStockDisponible());
     }
 
     @Test
@@ -74,15 +84,33 @@ class ProductoServiceImplTest {
     }
 
     @Test
+    void consultarStock_productoExistente_retornaStockDesdeInventario() {
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(42);
+
+        int stock = productoService.consultarStock(1L);
+
+        assertEquals(42, stock);
+    }
+
+    @Test
+    void consultarStock_productoInexistente_lanzaInvalidRequestException() {
+        when(productoRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(InvalidRequestException.class, () -> productoService.consultarStock(99L));
+    }
+
+    @Test
     void testSave_Exito() {
         when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
-        when(productoRepository.save(any(Producto.class))).thenReturn(producto);
+        when(productoRepository.save(requireNonNull(producto))).thenReturn(requireNonNull(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(0);
 
         Producto resultado = productoService.save(producto);
 
         assertNotNull(resultado);
         verify(categoriaRepository, times(1)).findById(1L);
-        verify(productoRepository, times(1)).save(producto);
+        verify(productoRepository, times(1)).save(requireNonNull(producto));
     }
 
     @Test
@@ -93,8 +121,7 @@ class ProductoServiceImplTest {
             productoService.save(producto);
         });
 
-        // Verificamos que la BD nunca se toca si falla
-        verify(productoRepository, never()).save(any(Producto.class));
+        verifyNoInteractions(productoRepository);
     }
 
     @Test
@@ -106,7 +133,7 @@ class ProductoServiceImplTest {
             productoService.save(producto);
         });
 
-        verify(productoRepository, never()).save(any(Producto.class));
+        verifyNoInteractions(productoRepository);
     }
 
     @Test
@@ -117,7 +144,7 @@ class ProductoServiceImplTest {
             productoService.save(producto);
         });
 
-        verify(productoRepository, never()).save(any(Producto.class));
+        verifyNoInteractions(productoRepository);
     }
 
     @Test
@@ -130,8 +157,12 @@ class ProductoServiceImplTest {
     @Test
     void testFindByCategoriaId() {
         when(productoRepository.findByCategoriaId(1L)).thenReturn(Arrays.asList(producto));
+        when(inventarioService.consultarStockDisponible(1L)).thenReturn(100);
+
         List<Producto> resultados = productoService.findByCategoriaId(1L);
+
         assertFalse(resultados.isEmpty());
+        assertEquals(100, resultados.get(0).getStockDisponible());
         verify(productoRepository, times(1)).findByCategoriaId(1L);
     }
 }

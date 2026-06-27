@@ -26,6 +26,7 @@ class OpenApiIntegrationTest {
                 .getContentAsString();
 
         assertTrue(apiDocs.contains("/api/carrito/checkout"));
+        assertTrue(apiDocs.contains("/api/productos/{id}/stock"));
     }
 
     @Test

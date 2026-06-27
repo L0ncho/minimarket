@@ -7,6 +7,7 @@ import com.minimarket.entity.Usuario;
 import com.minimarket.repository.CategoriaRepository;
 import com.minimarket.repository.ProductoRepository;
 import com.minimarket.repository.RolRepository;
+import com.minimarket.service.InventarioService;
 import com.minimarket.service.UsuarioService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -20,15 +21,19 @@ public class DataInitializer implements CommandLineRunner {
     private final CategoriaRepository categoriaRepository;
     private final ProductoRepository productoRepository;
     private final UsuarioService usuarioService;
+    private final InventarioService inventarioService;
 
-    public DataInitializer(RolRepository rolRepository,
-                           CategoriaRepository categoriaRepository,
-                           ProductoRepository productoRepository,
-                           UsuarioService usuarioService) {
+    public DataInitializer(
+            RolRepository rolRepository,
+            CategoriaRepository categoriaRepository,
+            ProductoRepository productoRepository,
+            UsuarioService usuarioService,
+            InventarioService inventarioService) {
         this.rolRepository = rolRepository;
         this.categoriaRepository = categoriaRepository;
         this.productoRepository = productoRepository;
         this.usuarioService = usuarioService;
+        this.inventarioService = inventarioService;
     }
 
     @Override
@@ -51,9 +56,9 @@ public class DataInitializer implements CommandLineRunner {
         Categoria lacteos = createCategoria("Lacteos");
         Categoria abarrotes = createCategoria("Abarrotes");
 
-        createProducto("Leche entera 1L", 1200.0, 50, lacteos);
-        createProducto("Agua mineral 500ml", 800.0, 100, bebidas);
-        createProducto("Arroz 1kg", 1500.0, 30, abarrotes);
+        createProductoConStock("Leche entera 1L", 1200.0, 50, lacteos);
+        createProductoConStock("Agua mineral 500ml", 800.0, 100, bebidas);
+        createProductoConStock("Arroz 1kg", 1500.0, 30, abarrotes);
     }
 
     private Rol createRole(String nombre) {
@@ -76,12 +81,12 @@ public class DataInitializer implements CommandLineRunner {
         return categoriaRepository.save(categoria);
     }
 
-    private void createProducto(String nombre, Double precio, Integer stock, Categoria categoria) {
+    private void createProductoConStock(String nombre, Double precio, Integer stockInicial, Categoria categoria) {
         Producto producto = new Producto();
         producto.setNombre(nombre);
         producto.setPrecio(precio);
-        producto.setStock(stock);
         producto.setCategoria(categoria);
-        productoRepository.save(producto);
+        Producto guardado = productoRepository.save(producto);
+        inventarioService.registrarEntrada(guardado.getId(), stockInicial);
     }
 }

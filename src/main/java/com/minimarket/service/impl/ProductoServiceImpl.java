@@ -5,35 +5,53 @@ import com.minimarket.entity.Producto;
 import com.minimarket.exception.InvalidRequestException;
 import com.minimarket.repository.CategoriaRepository;
 import com.minimarket.repository.ProductoRepository;
+import com.minimarket.service.InventarioService;
 import com.minimarket.service.ProductoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 @Service
 public class ProductoServiceImpl implements ProductoService {
 
-    @Autowired
-    private ProductoRepository productoRepository;
+    private final ProductoRepository productoRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final InventarioService inventarioService;
 
-    @Autowired
-    private CategoriaRepository categoriaRepository;
+    public ProductoServiceImpl(
+            ProductoRepository productoRepository,
+            CategoriaRepository categoriaRepository,
+            InventarioService inventarioService) {
+        this.productoRepository = productoRepository;
+        this.categoriaRepository = categoriaRepository;
+        this.inventarioService = inventarioService;
+    }
 
     @Override
     public List<Producto> findAll() {
-        return productoRepository.findAll();
+        List<Producto> productos = productoRepository.findAll();
+        productos.forEach(this::enriquecerConStockDisponible);
+        return productos;
     }
 
     @Override
     public Producto findById(Long id) {
-        return productoRepository.findById(id).orElse(null);
+        Producto producto = productoRepository.findById(requireNonNull(id)).orElse(null);
+        if (producto != null) {
+            enriquecerConStockDisponible(producto);
+        }
+        return producto;
     }
 
     @Override
     public Producto save(Producto producto) {
-        resolveCategoria(producto);
-        return productoRepository.save(producto);
+        Producto productoValido = requireNonNull(producto);
+        resolveCategoria(productoValido);
+        Producto guardado = productoRepository.save(productoValido);
+        enriquecerConStockDisponible(guardado);
+        return guardado;
     }
 
     @Override
@@ -43,7 +61,22 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public List<Producto> findByCategoriaId(Long categoriaId) {
-        return productoRepository.findByCategoriaId(categoriaId);
+        List<Producto> productos = productoRepository.findByCategoriaId(categoriaId);
+        productos.forEach(this::enriquecerConStockDisponible);
+        return productos;
+    }
+
+    @Override
+    public int consultarStock(Long productoId) {
+        Long productoIdValido = requireNonNull(productoId);
+        if (productoRepository.findById(productoIdValido).isEmpty()) {
+            throw new InvalidRequestException("Producto no encontrado", "Producto no encontrado");
+        }
+        return inventarioService.consultarStockDisponible(productoIdValido);
+    }
+
+    private void enriquecerConStockDisponible(Producto producto) {
+        producto.setStockDisponible(inventarioService.consultarStockDisponible(producto.getId()));
     }
 
     private void resolveCategoria(Producto producto) {
@@ -51,7 +84,7 @@ public class ProductoServiceImpl implements ProductoService {
             throw new InvalidRequestException("Invalid request", "Producto sin categoría");
         }
 
-        Long categoriaId = producto.getCategoria().getId();
+        Long categoriaId = requireNonNull(producto.getCategoria().getId());
         Categoria categoria = categoriaRepository.findById(categoriaId)
                 .orElseThrow(() -> new InvalidRequestException(
                         "Categoría no válida",
