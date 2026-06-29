@@ -10,4 +10,5 @@ public interface ProductoService {
     Producto save(Producto producto);
     void deleteById(Long id);
     List<Producto> findByCategoriaId(Long categoriaId);
+    int consultarStock(Long productoId);
 }

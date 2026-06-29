@@ -22,19 +22,17 @@ class CarritoTest {
         leche = new Producto();
         leche.setId(1L);
         leche.setNombre("Leche entera 1L");
-        leche.setStock(10);
 
         pan = new Producto();
         pan.setId(2L);
         pan.setNombre("Pan");
-        pan.setStock(10);
 
         carrito = new Carrito(usuario);
     }
 
     @Test
     void agregarProducto_creaItemNuevo() {
-        carrito.agregarProducto(leche, 2);
+        carrito.agregarProducto(leche, 2, 10);
 
         assertEquals(1, carrito.getItems().size());
         assertEquals(2, carrito.getItems().get(0).getCantidad());
@@ -43,8 +41,8 @@ class CarritoTest {
 
     @Test
     void agregarProducto_mismoProducto_sumaCantidad() {
-        carrito.agregarProducto(leche, 2);
-        carrito.agregarProducto(leche, 2);
+        carrito.agregarProducto(leche, 2, 10);
+        carrito.agregarProducto(leche, 2, 10);
 
         assertEquals(1, carrito.getItems().size());
         assertEquals(4, carrito.getItems().get(0).getCantidad());
@@ -52,8 +50,8 @@ class CarritoTest {
 
     @Test
     void agregarProducto_otroProducto_agregaNuevoItem() {
-        carrito.agregarProducto(leche, 2);
-        carrito.agregarProducto(pan, 1);
+        carrito.agregarProducto(leche, 2, 10);
+        carrito.agregarProducto(pan, 1, 10);
 
         assertEquals(2, carrito.getItems().size());
         assertEquals(2, carrito.getItems().get(0).getCantidad());
@@ -62,11 +60,10 @@ class CarritoTest {
 
     @Test
     void agregarProducto_stockInsuficienteAcumulado_lanzaInsufficientStockException() {
-        leche.setStock(3);
-        carrito.agregarProducto(leche, 2);
+        carrito.agregarProducto(leche, 2, 3);
 
         InsufficientStockException exception = assertThrows(InsufficientStockException.class, () ->
-                carrito.agregarProducto(leche, 2));
+                carrito.agregarProducto(leche, 2, 3));
 
         assertEquals("Stock insuficiente para 'Leche entera 1L'. Solo quedan 1 unidades.", exception.getMessage());
         assertEquals(1, exception.getDisponible());
@@ -74,8 +71,8 @@ class CarritoTest {
 
     @Test
     void quitarProducto_eliminaItemDelCarrito() {
-        carrito.agregarProducto(leche, 2);
-        carrito.agregarProducto(pan, 1);
+        carrito.agregarProducto(leche, 2, 10);
+        carrito.agregarProducto(pan, 1, 10);
 
         carrito.quitarProducto(leche.getId());
 

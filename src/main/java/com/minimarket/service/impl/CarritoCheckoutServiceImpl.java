@@ -5,6 +5,7 @@ import com.minimarket.repository.CarritoRepository;
 import com.minimarket.repository.ProductoRepository;
 import com.minimarket.repository.UsuarioRepository;
 import com.minimarket.service.CarritoCheckoutService;
+import com.minimarket.service.NotificacionService;
 import com.minimarket.service.PaymentProcessor;
 import com.minimarket.service.UsuarioService;
 import com.minimarket.service.VentaService;
@@ -24,6 +25,7 @@ public class CarritoCheckoutServiceImpl implements CarritoCheckoutService {
     private final ProductoRepository productoRepository;
     private final VentaService ventaService;
     private final PaymentProcessor paymentProcessor;
+    private final NotificacionService notificacionService;
 
     public CarritoCheckoutServiceImpl(
             UsuarioService usuarioService,
@@ -31,13 +33,15 @@ public class CarritoCheckoutServiceImpl implements CarritoCheckoutService {
             CarritoRepository carritoRepository,
             ProductoRepository productoRepository,
             VentaService ventaService,
-            PaymentProcessor paymentProcessor) {
+            PaymentProcessor paymentProcessor,
+            NotificacionService notificacionService) {
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
         this.carritoRepository = carritoRepository;
         this.productoRepository = productoRepository;
         this.ventaService = ventaService;
         this.paymentProcessor = paymentProcessor;
+        this.notificacionService = notificacionService;
     }
 
     @Override
@@ -71,6 +75,9 @@ public class CarritoCheckoutServiceImpl implements CarritoCheckoutService {
 
         Venta venta = buildVenta(usuario, metodoPago, carrito.getItems());
         Venta ventaGuardada = ventaService.save(venta);
+        notificacionService.notificarCambioPedido(
+                ventaGuardada,
+                "Pedido #" + ventaGuardada.getId() + " creado, pendiente de pago");
         paymentProcessor.initiatePayment(ventaGuardada);
         carritoRepository.delete(carrito);
         return ventaGuardada;
@@ -89,7 +96,7 @@ public class CarritoCheckoutServiceImpl implements CarritoCheckoutService {
             Long productoId = requireNonNull(productoEnCarrito.getId(), "Producto inválido en el carrito");
             Producto producto = productoRepository.findById(productoId)
                     .orElseThrow(() -> new IllegalArgumentException(
-                            "Producto con id " + productoId + " not found"));
+                            "Producto con id " + productoId + " no encontrado"));
 
             DetalleVenta detalle = new DetalleVenta();
             detalle.setVenta(venta);

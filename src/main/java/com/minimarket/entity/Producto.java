@@ -1,5 +1,6 @@
 package com.minimarket.entity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 
 @Entity
@@ -8,20 +9,22 @@ public class Producto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Schema(description = "Nombre del producto", example = "Leche entera 1L")
     @Column(nullable = false)
     private String nombre;
 
+    @Schema(description = "Precio unitario", example = "990.0")
     @Column(nullable = false)
     private Double precio;
 
-    @Column(nullable = false)
-    private Integer stock;
+    @Schema(description = "Stock disponible calculado desde inventario", example = "50", accessMode = Schema.AccessMode.READ_ONLY)
+    @Transient
+    private Integer stockDisponible;
 
     @ManyToOne
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -46,12 +49,12 @@ public class Producto {
         this.precio = precio;
     }
 
-    public Integer getStock() {
-        return stock;
+    public Integer getStockDisponible() {
+        return stockDisponible;
     }
 
-    public void setStock(Integer stock) {
-        this.stock = stock;
+    public void setStockDisponible(Integer stockDisponible) {
+        this.stockDisponible = stockDisponible;
     }
 
     public Categoria getCategoria() {

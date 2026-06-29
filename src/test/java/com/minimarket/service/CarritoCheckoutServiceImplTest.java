@@ -42,6 +42,9 @@ class CarritoCheckoutServiceImplTest {
     @Mock
     private PaymentProcessor paymentProcessor;
 
+    @Mock
+    private NotificacionService notificacionService;
+
     @InjectMocks
     private CarritoCheckoutServiceImpl carritoCheckoutService;
 
@@ -59,11 +62,10 @@ class CarritoCheckoutServiceImplTest {
         producto.setId(1L);
         producto.setNombre("Cafe");
         producto.setPrecio(1000.0);
-        producto.setStock(10);
 
         carrito = new Carrito(usuario);
         carrito.setId(1L);
-        carrito.agregarProducto(producto, 2);
+        carrito.agregarProducto(producto, 2, 10);
     }
 
     @Test
@@ -109,8 +111,7 @@ class CarritoCheckoutServiceImplTest {
         pan.setId(2L);
         pan.setNombre("Pan");
         pan.setPrecio(500.0);
-        pan.setStock(10);
-        carrito.agregarProducto(pan, 3);
+        carrito.agregarProducto(pan, 3, 10);
 
         when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(usuario));
         when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carrito));
@@ -181,5 +182,24 @@ class CarritoCheckoutServiceImplTest {
         carritoCheckoutService.checkout("cliente", MetodoPago.EFECTIVO);
 
         verify(paymentProcessor).initiatePayment(ventaGuardada);
+    }
+
+    @Test
+    void checkout_exitoso_notificaCambioDePedidoAlCliente() {
+        Venta ventaGuardada = new Venta();
+        ventaGuardada.setId(42L);
+        ventaGuardada.setUsuario(usuario);
+        ventaGuardada.setEstadoPago(EstadoPago.PENDIENTE_PAGO);
+
+        when(usuarioService.findByUsername("cliente")).thenReturn(Optional.of(usuario));
+        when(carritoRepository.findByUsuarioId(4L)).thenReturn(Optional.of(carrito));
+        when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
+        when(ventaService.save(any(Venta.class))).thenReturn(ventaGuardada);
+
+        carritoCheckoutService.checkout("cliente", MetodoPago.EFECTIVO);
+
+        verify(notificacionService).notificarCambioPedido(
+                ventaGuardada,
+                "Pedido #42 creado, pendiente de pago");
     }
 }

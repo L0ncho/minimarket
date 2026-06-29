@@ -10,4 +10,8 @@ public interface InventarioService {
     Inventario save(Inventario inventario);
     void deleteById(Long id);
     List<Inventario> findByProductoId(Long productoId);
+
+    int consultarStockDisponible(Long productoId);
+    void registrarEntrada(Long productoId, int cantidad);
+    void registrarSalida(Long productoId, int cantidad);
 }

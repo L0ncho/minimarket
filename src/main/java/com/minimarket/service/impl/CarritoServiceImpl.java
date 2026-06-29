@@ -8,6 +8,7 @@ import com.minimarket.repository.CarritoRepository;
 import com.minimarket.repository.ProductoRepository;
 import com.minimarket.repository.UsuarioRepository;
 import com.minimarket.service.CarritoService;
+import com.minimarket.service.InventarioService;
 import com.minimarket.service.UsuarioService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,16 +28,19 @@ public class CarritoServiceImpl implements CarritoService {
     private final ProductoRepository productoRepository;
     private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
+    private final InventarioService inventarioService;
 
     public CarritoServiceImpl(
             CarritoRepository carritoRepository,
             ProductoRepository productoRepository,
             UsuarioService usuarioService,
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository,
+            InventarioService inventarioService) {
         this.carritoRepository = carritoRepository;
         this.productoRepository = productoRepository;
         this.usuarioService = usuarioService;
         this.usuarioRepository = usuarioRepository;
+        this.inventarioService = inventarioService;
     }
 
     @Override
@@ -53,10 +57,12 @@ public class CarritoServiceImpl implements CarritoService {
         Producto producto = productoRepository.findById(productoIdValido)
                 .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado en BD"));
 
+        int stockDisponible = inventarioService.consultarStockDisponible(productoIdValido);
+
         Carrito carrito = carritoRepository.findByUsuarioId(objetivoId)
                 .orElseGet(() -> new Carrito(usuarioObjetivo));
 
-        carrito.agregarProducto(producto, cantidad);
+        carrito.agregarProducto(producto, cantidad, stockDisponible);
         return carritoRepository.save(carrito);
     }
 
